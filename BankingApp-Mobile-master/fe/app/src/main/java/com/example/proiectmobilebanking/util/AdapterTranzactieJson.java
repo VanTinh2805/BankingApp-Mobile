@@ -16,41 +16,39 @@ import com.example.proiectmobilebanking.TranzactionJson;
 import java.util.List;
 
 public class AdapterTranzactieJson extends ArrayAdapter<TranzactionJson> {
-    private Context context;
     private int resource;
     private List<TranzactionJson> tranzactions;
-    private LayoutInflater layout;
+    private LayoutInflater inflater;
 
 
-    public AdapterTranzactieJson(@NonNull Context context, int resource, @NonNull List<TranzactionJson> tranzactions,LayoutInflater layout) {
+    public AdapterTranzactieJson(@NonNull Context context, int resource, @NonNull List<TranzactionJson> tranzactions, LayoutInflater layout) {
         super(context, resource, tranzactions);
-        this.context=context;
-        this.resource=resource;
-        this.tranzactions=tranzactions;
-        this.layout=layout;
+        this.resource = resource;
+        this.tranzactions = tranzactions;
+        this.inflater = layout;
     }
 
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        View view=layout.inflate(resource,parent,false);
-        TranzactionJson tranzaction =tranzactions.get(position);
-        if(view==null)
-        {
-            view = layout.inflate(R.layout.tranzaction_row, null, true);
+        if (convertView == null) {
+            convertView = inflater.inflate(resource, parent, false);
         }
 
+        TranzactionJson tranzaction = tranzactions.get(position);
 
-        TextView tvBenef=view.findViewById(R.id.tv_benef);
-        TextView tvAccount=view.findViewById(R.id.tv_account);
-        TextView tvAmount=view.findViewById(R.id.tv_amount);
-        TextView tvStatus=view.findViewById(R.id.tv_status);
+        TextView tvBenef = convertView.findViewById(R.id.tv_benef);
+        TextView tvAccount = convertView.findViewById(R.id.tv_account);
+        TextView tvAmount = convertView.findViewById(R.id.tv_amount);
+        TextView tvStatus = convertView.findViewById(R.id.tv_status);
 
-        tranzaction=tranzactions.get(position);
-        tvBenef.setText(tranzaction.getBeneficiaryName());
-        tvAccount.setText(tranzaction.getAccountNumber());
-        tvAmount.setText(""+tranzaction.getAmount());
-        tvStatus.setText(tranzaction.getStatus());
-        return view;
+        if (tranzaction != null) {
+            tvBenef.setText(tranzaction.getBeneficiaryName());
+            tvAccount.setText(tranzaction.getAccountNumber());
+            tvAmount.setText(tranzaction.getAmount() != null ? String.valueOf(tranzaction.getAmount()) : "0");
+            tvStatus.setText(tranzaction.getStatus());
+        }
+
+        return convertView;
     }
 }

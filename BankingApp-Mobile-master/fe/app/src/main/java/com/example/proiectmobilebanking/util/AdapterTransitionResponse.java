@@ -18,30 +18,36 @@ import java.util.List;
 public class AdapterTransitionResponse extends ArrayAdapter<TransitionResponse> {
     private int resource;
     private List<TransitionResponse> transitions;
-    private LayoutInflater layout;
+    private LayoutInflater inflater;
 
     public AdapterTransitionResponse(@NonNull Context context, int resource, @NonNull List<TransitionResponse> transitions, LayoutInflater layout) {
         super(context, resource, transitions);
         this.resource = resource;
         this.transitions = transitions;
-        this.layout = layout;
+        this.inflater = layout;
     }
 
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        View view = layout.inflate(resource, parent, false);
+        if (convertView == null) {
+            convertView = inflater.inflate(resource, parent, false);
+        }
+
         TransitionResponse transition = transitions.get(position);
 
-        TextView tvBenef = view.findViewById(R.id.tv_benef);
-        TextView tvAccount = view.findViewById(R.id.tv_account);
-        TextView tvAmount = view.findViewById(R.id.tv_amount);
-        TextView tvStatus = view.findViewById(R.id.tv_status);
+        TextView tvBenef = convertView.findViewById(R.id.tv_benef);
+        TextView tvAccount = convertView.findViewById(R.id.tv_account);
+        TextView tvAmount = convertView.findViewById(R.id.tv_amount);
+        TextView tvStatus = convertView.findViewById(R.id.tv_status);
 
-        tvBenef.setText(transition.getToUser());
-        tvAccount.setText(transition.getFromUser());
-        tvAmount.setText(String.valueOf(transition.getAmount()));
-        tvStatus.setText(transition.getCreated());
-        return view;
+        if (transition != null) {
+            tvBenef.setText(transition.getToUser() != null ? transition.getToUser() : "N/A");
+            tvAccount.setText(transition.getFromUser() != null ? transition.getFromUser() : "N/A");
+            tvAmount.setText(transition.getAmount() != null ? String.valueOf(transition.getAmount()) : "0.0");
+            tvStatus.setText(transition.getCreated() != null ? transition.getCreated() : "");
+        }
+
+        return convertView;
     }
 }
