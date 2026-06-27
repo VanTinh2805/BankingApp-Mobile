@@ -3,7 +3,6 @@ package com.example.proiectmobilebanking.json;
 import androidx.annotation.NonNull;
 
 import com.example.proiectmobilebanking.TranzactionJson;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
 
 import java.util.List;
 

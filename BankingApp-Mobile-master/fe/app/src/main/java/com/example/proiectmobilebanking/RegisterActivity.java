@@ -1,27 +1,22 @@
 package com.example.proiectmobilebanking;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.room.Room;
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import com.example.proiectmobilebanking.database.DatabaseManager;
-import com.example.proiectmobilebanking.database.models.User;
-import com.example.proiectmobilebanking.database.service.UserService;
-import com.google.android.material.textfield.TextInputEditText;
+import com.example.proiectmobilebanking.network.RetrofitClient;
+import com.example.proiectmobilebanking.network.api.ApiService;
+import com.example.proiectmobilebanking.network.model.RegisterRequest;
 
-import java.util.ArrayList;
-import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
     Button btnlogin;
@@ -33,7 +28,7 @@ public class RegisterActivity extends AppCompatActivity {
     EditText password;
     EditText confirmPassword;
     RadioGroup rgGender;
-    DatabaseManager manager;
+    private ApiService apiService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,8 +47,8 @@ public class RegisterActivity extends AppCompatActivity {
         password=findViewById(R.id.et_password);
         rgGender=findViewById(R.id.radioGroup);
         confirmPassword=findViewById(R.id.et_confirmPassword);
+        apiService = RetrofitClient.getClient().create(ApiService.class);
 
-        manager= Room.databaseBuilder(getApplicationContext(),DatabaseManager.class,"pocketBank").fallbackToDestructiveMigration().build();
         btnlogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,20 +61,26 @@ public class RegisterActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(valid())
                 {
-                    User user=createUser();
-                    new UserService.Insert(getApplicationContext()) {
+                    RegisterRequest request = createRegisterRequest();
+                    apiService.register(request).enqueue(new Callback<Void>() {
                         @Override
-                        protected void onPostExecute(User result) {
-                            if (result != null) {
-                               Toast.makeText(getApplicationContext(),R.string.register_succesful,Toast.LENGTH_LONG).show();
-                               Intent intent=new Intent(getApplicationContext(),LoginActivity.class);
-                               startActivity(intent);
+                        public void onResponse(Call<Void> call, Response<Void> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(getApplicationContext(), R.string.register_succesful, Toast.LENGTH_LONG).show();
+                                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                                startActivity(intent);
+                                finish();
+                            } else {
+                                Toast.makeText(getApplicationContext(), "Email da ton tai hoac du lieu khong hop le", Toast.LENGTH_LONG).show();
                             }
                         }
-                    }.execute(user);
 
-
-
+                        @Override
+                        public void onFailure(Call<Void> call, Throwable t) {
+                            Toast.makeText(getApplicationContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                            t.printStackTrace();
+                        }
+                    });
                 }
             }
         });
@@ -113,16 +114,11 @@ public class RegisterActivity extends AppCompatActivity {
         }
         return true;
     }
-    private User createUser(){
-        String firstNameS=firstName.getText().toString();
-        String lastNameS=lastName.getText().toString();
-        String emailS=email.getText().toString();
-        String ibans=iban.getText().toString();
-        String passwordS=password.getText().toString();
-        String confirmPasswordS=confirmPassword.getText().toString();
-        RadioButton selectedGender=findViewById(rgGender.getCheckedRadioButtonId());
-        String genderS=selectedGender.getText().toString();
-        return new User(firstNameS,lastNameS,emailS,ibans,passwordS,confirmPasswordS,genderS);
+    private RegisterRequest createRegisterRequest(){
+        String fullName = firstName.getText().toString().trim() + " " + lastName.getText().toString().trim();
+        String emailS = email.getText().toString().trim();
+        String passwordS = password.getText().toString();
+        return new RegisterRequest(fullName, emailS, passwordS);
     }
 
 

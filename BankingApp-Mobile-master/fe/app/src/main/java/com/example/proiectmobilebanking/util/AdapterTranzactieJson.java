@@ -12,7 +12,6 @@ import androidx.annotation.Nullable;
 
 import com.example.proiectmobilebanking.R;
 import com.example.proiectmobilebanking.TranzactionJson;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
 
 import java.util.List;
 

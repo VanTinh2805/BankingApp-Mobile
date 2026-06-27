@@ -8,17 +8,13 @@ import android.graphics.RectF;
 import android.os.Bundle;
 
 import com.example.proiectmobilebanking.SharedPreferencesUser;
-import com.example.proiectmobilebanking.database.DatabaseManager;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
-import com.example.proiectmobilebanking.database.service.TranzactionService;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
+import com.example.proiectmobilebanking.network.RetrofitClient;
+import com.example.proiectmobilebanking.network.api.ApiService;
+import com.example.proiectmobilebanking.network.model.TransitionResponse;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.room.Room;
 
-import android.os.Handler;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -27,14 +23,18 @@ import com.example.proiectmobilebanking.R;
 
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ChartActivity extends AppCompatActivity {
 private SharedPreferencesUser preferences;
-long idUser;
 Integer amountSend=0;
 Integer amountAsk=0;
 LinearLayout layout;
 Integer values[]=new Integer[2];
 float valuesFloat[]=new float[2];
+private ApiService apiService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,54 +42,43 @@ float valuesFloat[]=new float[2];
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         preferences=new SharedPreferencesUser(getApplicationContext());
-        idUser=preferences.getUser();
-        new TranzactionService.GetAllTransactions(getApplicationContext()) {
+        apiService = RetrofitClient.getClient().create(ApiService.class);
+        loadChartData();
+
+    }
+
+    private void loadChartData() {
+        apiService.getCurrentTransitions(preferences.getAuthorizationHeader()).enqueue(new Callback<List<TransitionResponse>>() {
             @Override
-            protected void onPostExecute(
-                    List<Tranzaction> results) {
-                if (results != null) {
-                    for(Tranzaction tranzaction:results){
-                        if(tranzaction.getIdUser()==idUser&&tranzaction.getStatus().equals("Send")){
-                            amountSend=amountSend+tranzaction.getAmount();
-
-                        }
-                        if(tranzaction.getIdUser()==idUser&&tranzaction.getStatus().equals("Ask")){
-                            amountAsk=amountAsk+tranzaction.getAmount();
-
-                        }
-
+            public void onResponse(Call<List<TransitionResponse>> call, Response<List<TransitionResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for(TransitionResponse transition:response.body()){
+                        amountSend += transition.getAmount().intValue();
                     }
-                    if(amountAsk!=null||amountSend!=null)
-                    { if(amountSend!=null)
-                    {values[0]=amountSend;
-                        valuesFloat[0]=(float)amountSend;}
-                        if(amountAsk!=null)
-                        {values[1]=amountAsk;
-                            valuesFloat[1]=(float)amountAsk;}
-                        valuesFloat=calculate(valuesFloat);}
+                    values[0]=amountSend;
+                    valuesFloat[0]=(float)amountSend;
+                    values[1]=amountAsk;
+                    valuesFloat[1]=(float)amountAsk;
+                    valuesFloat=calculate(valuesFloat);
                     layout=findViewById(R.id.chartLayout);
                     if(valuesFloat[0]!=0 || valuesFloat[1]!=0)
                     {layout.addView(new Grafic(getApplicationContext(),valuesFloat));}
                 }
             }
-        }.execute();
-//        if(amountAsk!=null||amountSend!=null)
-//        { if(amountSend!=null)
-//        {values[0]=amountSend;
-//        valuesFloat[0]=(float)amountSend;}
-//        if(amountAsk!=null)
-//        {values[1]=amountAsk;
-//        valuesFloat[1]=(float)amountAsk;}
-//        valuesFloat=calculate(valuesFloat);}
-//         layout=findViewById(R.id.chartLayout);
-//         if(valuesFloat[0]!=0 || valuesFloat[1]!=0)
-//         {layout.addView(new Grafic(this,valuesFloat));}
 
+            @Override
+            public void onFailure(Call<List<TransitionResponse>> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+            }
+        });
     }
     private float[] calculate(float[] vector){
         float sum=0;
         for(int i=0;i<vector.length;i++){
             sum=sum+vector[i];
+        }
+        if (sum == 0) {
+            return vector;
         }
         for(int i=0;i<vector.length;i++){
             vector[i]=360*(vector[i]/sum);
