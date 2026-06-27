@@ -7,6 +7,10 @@ android {
     compileSdkVersion 34
     buildToolsVersion "34.0.0"
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
         applicationId "com.example.proiectmobilebanking"
         minSdkVersion 24
@@ -15,6 +19,8 @@ android {
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+        // Keep the API endpoint in one place so demo setup is easy to switch.
+        buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:8081/api/\""
     }
 
     buildTypes {
@@ -35,7 +41,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment:2.0.0'
     implementation 'androidx.navigation:navigation-ui:2.0.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.google.android.gms:play-services-maps:16.1.0'
+    implementation 'com.google.android.gms:play-services-maps:19.2.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     testImplementation 'junit:junit:4.12'

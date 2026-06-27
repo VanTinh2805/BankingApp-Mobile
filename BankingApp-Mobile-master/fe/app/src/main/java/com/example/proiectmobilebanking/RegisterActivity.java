@@ -4,7 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Patterns;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,12 +19,17 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+    );
+
     Button btnlogin;
     Button btnRegister;
     EditText firstName;
@@ -106,22 +111,22 @@ public class RegisterActivity extends AppCompatActivity {
         String passwordValue = password.getText().toString();
         String confirmPasswordValue = confirmPassword.getText().toString();
 
-        if (firstNameValue.isEmpty()) {
+        if (TextUtils.isEmpty(firstNameValue)) {
             firstName.setError(getString(R.string.invalid_firstName));
             firstName.requestFocus();
             return false;
         }
-        if (lastNameValue.isEmpty()) {
+        if (TextUtils.isEmpty(lastNameValue)) {
             lastName.setError(getString(R.string.invalid_lastName));
             lastName.requestFocus();
             return false;
         }
-        if (emailValue.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(emailValue).matches()) {
+        if (TextUtils.isEmpty(emailValue) || !EMAIL_PATTERN.matcher(emailValue).matches()) {
             email.setError(getString(R.string.invalid_email));
             email.requestFocus();
             return false;
         }
-        if (passwordValue.trim().isEmpty()) {
+        if (TextUtils.isEmpty(passwordValue.trim())) {
             password.setError(getString(R.string.invalid_password));
             password.requestFocus();
             return false;
@@ -143,7 +148,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void showRegisterError(Response<Void> response) {
         String message = getBackendError(response);
-        if (message == null || message.trim().isEmpty()) {
+        if (message == null || TextUtils.isEmpty(message.trim())) {
             if (response.code() == 409) {
                 message = "Email da ton tai";
             } else if (response.code() >= 500) {

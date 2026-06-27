@@ -2,6 +2,7 @@ package com.example.proiectmobilebanking;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -68,17 +69,17 @@ public class MoneyActivity extends AppCompatActivity {
         String receiver = etAccount.getText().toString().trim();
         String amountText = etAmount.getText().toString().trim();
 
-        if (beneficiary.isEmpty()) {
+        if (TextUtils.isEmpty(beneficiary)) {
             etBeneficiar.setError(getString(R.string.error_beneficiar));
             etBeneficiar.requestFocus();
             return false;
         }
-        if (receiver.isEmpty()) {
+        if (TextUtils.isEmpty(receiver)) {
             etAccount.setError(getString(R.string.error_account));
             etAccount.requestFocus();
             return false;
         }
-        if (amountText.isEmpty()) {
+        if (TextUtils.isEmpty(amountText)) {
             etAmount.setError(getString(R.string.error_amount));
             etAmount.requestFocus();
             return false;
@@ -102,7 +103,7 @@ public class MoneyActivity extends AppCompatActivity {
 
     private void sendMoney() {
         String authorization = preferences.getAuthorizationHeader();
-        if (authorization.isEmpty()) {
+        if (TextUtils.isEmpty(authorization)) {
             goToLogin();
             return;
         }
@@ -139,7 +140,7 @@ public class MoneyActivity extends AppCompatActivity {
 
     private void showTransferError(Response<Void> response) {
         String message = getBackendError(response);
-        if (message == null || message.trim().isEmpty()) {
+        if (message == null || TextUtils.isEmpty(message.trim())) {
             if (response.code() >= 500) {
                 message = "Server dang gap loi";
             } else {

@@ -2,6 +2,7 @@ package com.example.proiectmobilebanking;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -76,7 +77,7 @@ public class AboutFragment extends Fragment {
 
     private void loadProfile() {
         String authorization = preferences.getAuthorizationHeader();
-        if (authorization.isEmpty()) {
+        if (TextUtils.isEmpty(authorization)) {
             goToLogin();
             return;
         }
@@ -119,7 +120,7 @@ public class AboutFragment extends Fragment {
     }
 
     private String valueOrDash(String value) {
-        if (value == null || value.trim().isEmpty()) {
+        if (value == null || TextUtils.isEmpty(value.trim())) {
             return "-";
         }
         return value;

@@ -2,6 +2,7 @@ package com.example.proiectmobilebanking;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -79,7 +80,7 @@ public class FeedbackFragment extends Fragment {
 
     private void loadFeedback() {
         String authorization = preferencesUser.getAuthorizationHeader();
-        if (authorization.isEmpty()) {
+        if (TextUtils.isEmpty(authorization)) {
             goToLogin();
             return;
         }
@@ -109,7 +110,7 @@ public class FeedbackFragment extends Fragment {
 
     private void createFeedback() {
         String authorization = preferencesUser.getAuthorizationHeader();
-        if (authorization.isEmpty()) {
+        if (TextUtils.isEmpty(authorization)) {
             goToLogin();
             return;
         }
@@ -148,7 +149,7 @@ public class FeedbackFragment extends Fragment {
         }
 
         String authorization = preferencesUser.getAuthorizationHeader();
-        if (authorization.isEmpty()) {
+        if (TextUtils.isEmpty(authorization)) {
             goToLogin();
             return;
         }
@@ -177,7 +178,7 @@ public class FeedbackFragment extends Fragment {
     }
 
     public boolean valid() {
-        if (textFb.getText() == null || textFb.getText().toString().trim().isEmpty()) {
+        if (textFb.getText() == null || TextUtils.isEmpty(textFb.getText().toString().trim())) {
             textFb.setError(getString(R.string.invalid_email));
             textFb.requestFocus();
             return false;

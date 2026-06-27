@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,12 +48,12 @@ public class LoginActivity extends AppCompatActivity {
         btnlogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (etEmail.getText().toString().trim().isEmpty()) {
+                if (TextUtils.isEmpty(etEmail.getText().toString().trim())) {
                     etEmail.setError("Nhap email");
                     return;
                 }
 
-                if (etPassword.getText().toString().trim().isEmpty()) {
+                if (TextUtils.isEmpty(etPassword.getText().toString().trim())) {
                     etPassword.setError("Nhap mat khau");
                     return;
                 }

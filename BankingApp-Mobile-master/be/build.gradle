@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot'
     id 'io.spring.dependency-management'
+    id 'application'
 }
 
 group = 'matcha.banking'
@@ -9,6 +10,14 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     sourceCompatibility = '17'
+}
+
+application {
+    mainClass = 'matcha.banking.be.BeApplication'
+}
+
+springBoot {
+    mainClass = 'matcha.banking.be.BeApplication'
 }
 
 configurations {
