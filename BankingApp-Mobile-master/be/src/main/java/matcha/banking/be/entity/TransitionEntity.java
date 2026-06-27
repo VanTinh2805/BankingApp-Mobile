@@ -1,7 +1,6 @@
 package matcha.banking.be.entity;
 
 import jakarta.persistence.*;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

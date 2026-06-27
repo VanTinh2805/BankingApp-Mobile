@@ -1,14 +1,7 @@
 package com.example.proiectmobilebanking;
 
-
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,15 +13,12 @@ import android.widget.ListView;
 import android.widget.RatingBar;
 import android.widget.Toast;
 
-import com.example.proiectmobilebanking.firebase.FirebaseController;
-import com.example.proiectmobilebanking.firebase.FirebaseNotifier;
+import androidx.fragment.app.Fragment;
+
 import com.example.proiectmobilebanking.network.RetrofitClient;
 import com.example.proiectmobilebanking.network.api.ApiService;
-import com.example.proiectmobilebanking.network.model.UserInfo;
-import com.example.proiectmobilebanking.util.Suggestion;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.ValueEventListener;
+import com.example.proiectmobilebanking.network.model.FeedbackRequest;
+import com.example.proiectmobilebanking.network.model.FeedbackResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,155 +27,172 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+public class FeedbackFragment extends Fragment {
+    Button btnFeedback;
+    EditText textFb;
+    RatingBar rating;
+    ListView lvSuggestions;
+    SharedPreferencesUser preferencesUser;
+    private ApiService apiService;
+    private ArrayAdapter<FeedbackResponse> adapter;
+    private List<FeedbackResponse> suggestions = new ArrayList<>();
 
-/**
- * A simple {@link Fragment} subclass.
- */
-public class FeedbackFragment extends Fragment implements FirebaseNotifier {
-Button btnFeedback;
-EditText textFb;
-RatingBar rating;
-ListView lvSuggestions;
-//private static final String SHARED_NAME = "sharedName";
-//private static final String RATING_BAR_KEY = "ratingBarKey";
-private SharedPreferences preferences;
-long idUser;
-SharedPreferencesUser preferencesUser;
-String email;
-String sugestText;
-int selected=-1;
-private FirebaseController firebaseController;
-private ApiService apiService;
-private List<Suggestion> suggestions=new ArrayList<>();
     public FeedbackFragment() {
         // Required empty public constructor
     }
 
-
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View view= inflater.inflate(R.layout.fragment_feedback, container, false);
-        preferencesUser=new SharedPreferencesUser(getContext());
-        apiService= RetrofitClient.getClient().create(ApiService.class);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_feedback, container, false);
+        preferencesUser = new SharedPreferencesUser(requireContext());
+        apiService = RetrofitClient.getClient().create(ApiService.class);
         initComponents(view);
-        firebaseController=FirebaseController.getInstance(this);
-        loadCurrentUser();
+        loadFeedback();
         return view;
     }
 
-    private void loadCurrentUser() {
-        String authorization = preferencesUser.getAuthorizationHeader();
-        if (authorization.isEmpty()) {
-            return;
-        }
-
-        apiService.getCurrentUser(authorization).enqueue(new Callback<UserInfo>() {
-            @Override
-            public void onResponse(Call<UserInfo> call, Response<UserInfo> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    email = response.body().getEmail();
-                    findAllByUser();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<UserInfo> call, Throwable t) {
-                Toast.makeText(getContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-    private void initComponents(View view){
-        btnFeedback=view.findViewById(R.id.btnSendFeedback);
-        textFb=view.findViewById(R.id.etNumeFeedback);
-        rating=view.findViewById(R.id.ratingBar);
-        lvSuggestions=view.findViewById(R.id.lvSuggestion);
-        ArrayAdapter<Suggestion> adapter=new ArrayAdapter<>(getContext(),android.R.layout.simple_list_item_1,suggestions);
+    private void initComponents(View view) {
+        btnFeedback = view.findViewById(R.id.btnSendFeedback);
+        textFb = view.findViewById(R.id.etNumeFeedback);
+        rating = view.findViewById(R.id.ratingBar);
+        lvSuggestions = view.findViewById(R.id.lvSuggestion);
+        adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, suggestions);
         lvSuggestions.setAdapter(adapter);
 
         btnFeedback.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-
-                if(valid()) {
-                    sugestText=String.valueOf(textFb.getText());
-                    Toast.makeText(getContext(),R.string.feedback_send,Toast.LENGTH_LONG).show();
-                    String id=null;
-                    Suggestion suggestion = new Suggestion(id, 0, email, sugestText);
-
-                    firebaseController.insert(suggestion);
-
+                if (valid()) {
+                    createFeedback();
                 }
             }
         });
-            if(getActivity()!=null){
-                preferences=getActivity().getSharedPreferences("preferencesRating", Context.MODE_PRIVATE); //initializez
-                float value=preferences.getFloat("rbKey",-1);
-                if(value!=-1){
-                    rating.setRating(value);
-                }
-                rating.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
-                    @Override
-                    public void onRatingChanged(RatingBar ratingBar, float rating, boolean fromUser) {
-                        SharedPreferences.Editor edit=preferences.edit();
-                        edit.putFloat("rbKey",rating);
-                        edit.apply();
-                    }
-                });
 
+        lvSuggestions.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                deleteFeedback(suggestions.get(position));
+                return true;
+            }
+        });
+    }
+
+    private void loadFeedback() {
+        String authorization = preferencesUser.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            goToLogin();
+            return;
+        }
+
+        apiService.getCurrentFeedback(authorization).enqueue(new Callback<List<FeedbackResponse>>() {
+            @Override
+            public void onResponse(Call<List<FeedbackResponse>> call, Response<List<FeedbackResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    suggestions.clear();
+                    suggestions.addAll(response.body());
+                    adapter.notifyDataSetChanged();
+                } else if (response.code() == 401 || response.code() == 403) {
+                    preferencesUser.clearSession();
+                    goToLogin();
+                } else {
+                    Toast.makeText(getContext(), "Khong lay duoc feedback", Toast.LENGTH_LONG).show();
+                }
             }
 
-           lvSuggestions.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-               @Override
-               public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                   firebaseController.delete(suggestions.get(position));
-                   Toast.makeText(getContext(),getString(R.string.suggestion_deleted),Toast.LENGTH_LONG).show();
-                   return true;
-               }
-           });
+            @Override
+            public void onFailure(Call<List<FeedbackResponse>> call, Throwable t) {
+                Toast.makeText(getContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
+            }
+        });
     }
 
-    @Override
-    public void suggestionsChanges(List<Suggestion> suggestion) {
-        textFb.setText("");
-        suggestions.clear();
-        suggestions.addAll(suggestion);
-        ArrayAdapter adapter = (ArrayAdapter) lvSuggestions.getAdapter();
-        adapter.notifyDataSetChanged();
+    private void createFeedback() {
+        String authorization = preferencesUser.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            goToLogin();
+            return;
+        }
 
+        btnFeedback.setEnabled(false);
+        FeedbackRequest request = new FeedbackRequest(textFb.getText().toString().trim(), Math.round(rating.getRating()));
+        apiService.createFeedback(authorization, request).enqueue(new Callback<FeedbackResponse>() {
+            @Override
+            public void onResponse(Call<FeedbackResponse> call, Response<FeedbackResponse> response) {
+                btnFeedback.setEnabled(true);
+                if (response.isSuccessful() && response.body() != null) {
+                    textFb.setText("");
+                    suggestions.add(0, response.body());
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), R.string.feedback_send, Toast.LENGTH_LONG).show();
+                } else if (response.code() == 401 || response.code() == 403) {
+                    preferencesUser.clearSession();
+                    goToLogin();
+                } else {
+                    Toast.makeText(getContext(), "Khong gui duoc feedback", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FeedbackResponse> call, Throwable t) {
+                btnFeedback.setEnabled(true);
+                Toast.makeText(getContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
+            }
+        });
     }
 
-    public boolean valid(){
+    private void deleteFeedback(final FeedbackResponse feedback) {
+        if (feedback == null || feedback.getId() == null) {
+            return;
+        }
+
+        String authorization = preferencesUser.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            goToLogin();
+            return;
+        }
+
+        apiService.deleteFeedback(authorization, feedback.getId()).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    suggestions.remove(feedback);
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), getString(R.string.suggestion_deleted), Toast.LENGTH_LONG).show();
+                } else if (response.code() == 401 || response.code() == 403) {
+                    preferencesUser.clearSession();
+                    goToLogin();
+                } else {
+                    Toast.makeText(getContext(), "Khong xoa duoc feedback", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
+            }
+        });
+    }
+
+    public boolean valid() {
         if (textFb.getText() == null || textFb.getText().toString().trim().isEmpty()) {
-            Toast.makeText(getContext(), R.string.invalid_email, Toast.LENGTH_LONG).show();
+            textFb.setError(getString(R.string.invalid_email));
+            textFb.requestFocus();
             return false;
         }
         return true;
     }
 
-    public void findAllByUser(){
-        FirebaseController.openDb();
-        FirebaseController.databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                List<Suggestion> suggestions=new ArrayList<>();
-                for(DataSnapshot data:dataSnapshot.getChildren()){
-                    Suggestion suggestion=data.getValue(Suggestion.class);
-                    if(suggestion!=null){
-                        if(email != null && suggestion.getUserEmail().equals(email))
-                        {suggestions.add(suggestion);}
-                    }
-                }
-                FirebaseController.firebaseNotifier.suggestionsChanges(suggestions);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.e("Report","Not available");
-            }
-        });}
+    private void goToLogin() {
+        if (getContext() == null) {
+            return;
+        }
+        Intent intent = new Intent(getContext(), LoginActivity.class);
+        startActivity(intent);
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
+    }
 }

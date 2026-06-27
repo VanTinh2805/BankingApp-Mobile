@@ -57,9 +57,13 @@ public class SelectActivity extends AppCompatActivity {
         apiService.getCurrentUser(authorization).enqueue(new Callback<UserInfo>() {
             @Override
             public void onResponse(Call<UserInfo> call, Response<UserInfo> response) {
-                if (!response.isSuccessful() || response.body() == null) {
-                    preferences.isLogged(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    preferences.saveUserInfo(response.body());
+                } else if (response.code() == 401 || response.code() == 403) {
+                    preferences.clearSession();
                     goToLogin();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Khong lay duoc thong tin nguoi dung", Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -119,8 +123,7 @@ public class SelectActivity extends AppCompatActivity {
         btnDeleteAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                preferences.isLogged(false);
-                preferences.setToken("");
+                preferences.clearSession();
                 goToLogin();
             }
         });

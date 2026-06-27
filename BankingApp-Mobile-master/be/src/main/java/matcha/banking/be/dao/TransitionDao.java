@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface TransitionDao extends CrudRepository<TransitionEntity, Integer> {
     List<TransitionEntity> findByFromUser(String fromUser);
+
+    List<TransitionEntity> findByToUser(String toUser);
 }

@@ -6,7 +6,6 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.4.0'
-        classpath 'com.google.gms:google-services:4.4.1'
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.2.5'
         classpath 'io.spring.gradle:dependency-management-plugin:1.1.5'
     }
