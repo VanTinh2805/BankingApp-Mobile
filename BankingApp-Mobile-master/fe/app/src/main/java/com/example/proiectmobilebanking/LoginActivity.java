@@ -71,6 +71,7 @@ EditText etPassword;
                         if (response.isSuccessful() && response.body() != null) {
 
                             preferences.isLogged(true);
+                            preferences.setToken(response.body().getToken());
 
                             Toast.makeText(LoginActivity.this,
                                     "Login success",
@@ -110,4 +111,3 @@ EditText etPassword;
     }
 
 }
-

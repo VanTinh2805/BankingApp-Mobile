@@ -5,24 +5,21 @@ import android.os.Bundle;
 
 import com.example.proiectmobilebanking.Chart.ChartActivity;
 import com.example.proiectmobilebanking.Raports.RaportsActivity;
-import com.example.proiectmobilebanking.database.DatabaseManager;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
-import com.example.proiectmobilebanking.database.models.User;
-import com.example.proiectmobilebanking.database.service.TranzactionService;
-import com.example.proiectmobilebanking.database.service.UserService;
+import com.example.proiectmobilebanking.network.RetrofitClient;
+import com.example.proiectmobilebanking.network.api.ApiService;
+import com.example.proiectmobilebanking.network.model.UserInfo;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.room.Room;
 
-import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class SelectActivity extends AppCompatActivity {
     Button btnInfo;
@@ -33,11 +30,8 @@ public class SelectActivity extends AppCompatActivity {
     FloatingActionButton fabChart;
     public static final int code = 230;
     public static final String ADD_TRANZACTION_HISTORY = "addTranzactionH";
-    ArrayList<Tranzaction> transactions = new ArrayList<>();
-    User userCuID;
-    //DatabaseManager manager;
-    long idUser;
     SharedPreferencesUser preferences;
+    private ApiService apiService;
     Button btnDeleteAccount;
     Button btnRaport;
 
@@ -48,24 +42,39 @@ public class SelectActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         preferences=new SharedPreferencesUser(getApplicationContext());
-        idUser=preferences.getUser();
-        new UserService.GetAll(getApplicationContext()) {
+        apiService = RetrofitClient.getClient().create(ApiService.class);
+        loadCurrentUser();
+        initComponents();
+    }
+
+    private void loadCurrentUser() {
+        String authorization = preferences.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            goToLogin();
+            return;
+        }
+
+        apiService.getCurrentUser(authorization).enqueue(new Callback<UserInfo>() {
             @Override
-            protected void onPostExecute(
-                    List<User> results) {
-                if (results != null) {
-
-                    for(User user:results){
-                        if(user.getId()==idUser){
-                           userCuID=user;
-
-                        }
-
-                    }
+            public void onResponse(Call<UserInfo> call, Response<UserInfo> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    preferences.isLogged(false);
+                    goToLogin();
                 }
             }
-        }.execute();
-        initComponents();
+
+            @Override
+            public void onFailure(Call<UserInfo> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
+            }
+        });
+    }
+
+    private void goToLogin() {
+        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     public void initComponents() {
@@ -110,22 +119,9 @@ public class SelectActivity extends AppCompatActivity {
         btnDeleteAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                new UserService.Delete(getApplicationContext()) {
-                    @Override
-                    protected void onPostExecute(Integer result) {
-                        if (result == 1) {
-                            Toast.makeText(getApplicationContext(),getString(R.string.account_erased),Toast.LENGTH_LONG).show();
-
-                        } else {
-                            Toast.makeText(getApplicationContext(),
-                                    R.string.cannot_delete_user,
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    }
-                }.execute(userCuID);
-                Intent intent=new Intent(getApplicationContext(),LoginActivity.class);
-                startActivity(intent);
+                preferences.isLogged(false);
+                preferences.setToken("");
+                goToLogin();
             }
         });
         btnRaport.setOnClickListener(new View.OnClickListener() {
@@ -145,4 +141,3 @@ public class SelectActivity extends AppCompatActivity {
     }
 
     }
-

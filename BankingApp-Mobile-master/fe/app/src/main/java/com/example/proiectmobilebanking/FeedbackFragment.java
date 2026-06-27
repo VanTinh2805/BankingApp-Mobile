@@ -7,7 +7,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.room.Room;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,13 +20,11 @@ import android.widget.ListView;
 import android.widget.RatingBar;
 import android.widget.Toast;
 
-import com.example.proiectmobilebanking.database.DatabaseManager;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
-import com.example.proiectmobilebanking.database.models.User;
-import com.example.proiectmobilebanking.database.service.TranzactionService;
-import com.example.proiectmobilebanking.database.service.UserService;
 import com.example.proiectmobilebanking.firebase.FirebaseController;
 import com.example.proiectmobilebanking.firebase.FirebaseNotifier;
+import com.example.proiectmobilebanking.network.RetrofitClient;
+import com.example.proiectmobilebanking.network.api.ApiService;
+import com.example.proiectmobilebanking.network.model.UserInfo;
 import com.example.proiectmobilebanking.util.Suggestion;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -35,6 +32,10 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 /**
@@ -54,6 +55,7 @@ String email;
 String sugestText;
 int selected=-1;
 private FirebaseController firebaseController;
+private ApiService apiService;
 private List<Suggestion> suggestions=new ArrayList<>();
     public FeedbackFragment() {
         // Required empty public constructor
@@ -67,25 +69,33 @@ private List<Suggestion> suggestions=new ArrayList<>();
         // Inflate the layout for this fragment
         View view= inflater.inflate(R.layout.fragment_feedback, container, false);
         preferencesUser=new SharedPreferencesUser(getContext());
-        idUser=preferencesUser.getUser();
-        new UserService.GetAll(getContext()) {
-            @Override
-            protected void onPostExecute(
-                    List<User> results) {
-                if (results != null) {
-                    for(User user:results){
-                        if(user.getId()==idUser){
-                        email=user.getEmail();
-                        }
-
-                    }
-                }
-            }
-        }.execute();
+        apiService= RetrofitClient.getClient().create(ApiService.class);
         initComponents(view);
         firebaseController=FirebaseController.getInstance(this);
-        findAllByUser();
+        loadCurrentUser();
         return view;
+    }
+
+    private void loadCurrentUser() {
+        String authorization = preferencesUser.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            return;
+        }
+
+        apiService.getCurrentUser(authorization).enqueue(new Callback<UserInfo>() {
+            @Override
+            public void onResponse(Call<UserInfo> call, Response<UserInfo> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    email = response.body().getEmail();
+                    findAllByUser();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserInfo> call, Throwable t) {
+                Toast.makeText(getContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+            }
+        });
     }
     private void initComponents(View view){
         btnFeedback=view.findViewById(R.id.btnSendFeedback);
@@ -104,7 +114,7 @@ private List<Suggestion> suggestions=new ArrayList<>();
                     sugestText=String.valueOf(textFb.getText());
                     Toast.makeText(getContext(),R.string.feedback_send,Toast.LENGTH_LONG).show();
                     String id=null;
-                    Suggestion suggestion = new Suggestion(id, idUser, email, sugestText);
+                    Suggestion suggestion = new Suggestion(id, 0, email, sugestText);
 
                     firebaseController.insert(suggestion);
 
@@ -166,7 +176,7 @@ private List<Suggestion> suggestions=new ArrayList<>();
                 for(DataSnapshot data:dataSnapshot.getChildren()){
                     Suggestion suggestion=data.getValue(Suggestion.class);
                     if(suggestion!=null){
-                        if(suggestion.getUserEmail().equals(email))
+                        if(email != null && suggestion.getUserEmail().equals(email))
                         {suggestions.add(suggestion);}
                     }
                 }

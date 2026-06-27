@@ -3,21 +3,21 @@ package com.example.proiectmobilebanking;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.example.proiectmobilebanking.database.DatabaseManager;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
-import com.example.proiectmobilebanking.database.models.User;
+import com.example.proiectmobilebanking.network.RetrofitClient;
+import com.example.proiectmobilebanking.network.api.ApiService;
+import com.example.proiectmobilebanking.network.model.TransferRequest;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.room.Room;
 
-import android.os.Handler;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.Toast;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MoneyActivity extends AppCompatActivity {
     public static final String ADD_TRANZACTION_HISTORY = "addTranzactionH";
@@ -26,12 +26,9 @@ public class MoneyActivity extends AppCompatActivity {
     EditText etAccount;
     EditText etAmount;
     Button btnSend;
-    Spinner spnStatus;
-    long idUserTransaction;
     SharedPreferencesUser preferences;
     Intent intent;
-    Tranzaction edit;
-    String tip;
+    private ApiService apiService;
     public static final int code=230;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +37,7 @@ public class MoneyActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         preferences=new SharedPreferencesUser(getApplicationContext());
-        idUserTransaction=preferences.getUser();
+        apiService = RetrofitClient.getClient().create(ApiService.class);
         intent=getIntent();
 
         initComponents();
@@ -50,39 +47,16 @@ public class MoneyActivity extends AppCompatActivity {
         etBeneficiar=findViewById(R.id.et_beneficiary2);
         etAccount=findViewById(R.id.et_accountNumber2);
         etAmount=findViewById(R.id.et_amount2);
-        spnStatus=findViewById(R.id.spinner_status);
-        ArrayAdapter<CharSequence> adapter=ArrayAdapter.createFromResource(getApplicationContext(),R.array.spinner_status,R.layout.support_simple_spinner_dropdown_item);
-        spnStatus.setAdapter(adapter);
         btnSend=findViewById(R.id.btn_send2);
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(valid())
                 {
-                    final Tranzaction tranzaction=createTranzaction();
-
-                intent.putExtra(ADD_TRANZACTION_HISTORY,tranzaction);
-                    setResult(RESULT_OK, intent);
-                    Toast.makeText(getApplicationContext(),R.string.money_send,Toast.LENGTH_LONG).show();
-                    finish();
+                    sendMoney();
                 }
             }
         });
-
-    }
-    public void editTranzaction(View view){
-
-        String benef=etBeneficiar.getText().toString();
-        edit.setBeneficiaryName(benef);
-        String account=etAccount.getText().toString();
-        edit.setAccountNumber(account);
-        Integer amount=Integer.parseInt(etAmount.getText().toString());
-        edit.setAmount(amount);
-        String status=spnStatus.getSelectedItem().toString();
-        edit.setStatus(status);
-        intent.putExtra("editat",edit);
-        setResult(RESULT_OK,intent);
-        finish();
 
     }
     private boolean valid()
@@ -102,32 +76,55 @@ public class MoneyActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),R.string.error_amount,Toast.LENGTH_LONG).show();
             return false;
         }
+        try {
+            double amount = Double.parseDouble(etAmount.getText().toString().trim());
+            if (amount <= 0) {
+                Toast.makeText(getApplicationContext(), R.string.error_amount, Toast.LENGTH_LONG).show();
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            Toast.makeText(getApplicationContext(), R.string.error_amount, Toast.LENGTH_LONG).show();
+            return false;
+        }
 
 
             return true;
     }
-    private Tranzaction createTranzaction(){
-        String benef=etBeneficiar.getText().toString();
-        String account=etAccount.getText().toString();
-        Integer amount=Integer.parseInt(etAmount.getText().toString());
-        String status=spnStatus.getSelectedItem().toString();
-        return new Tranzaction(benef,account,status,amount,idUserTransaction);
-    }
 
-    private void onUpdate(Tranzaction tranzaction){
-        etBeneficiar.setText(tranzaction.getBeneficiaryName());
-            etAccount.setText(tranzaction.getAccountNumber());
-            etAmount.setText(tranzaction.getAmount());
-        if(tranzaction.getStatus()!=null){
-            ArrayAdapter<String> adapter = (ArrayAdapter<String>) spnStatus.getAdapter();
-            for (int i = 0; i < adapter.getCount(); i++) {
-                if (adapter.getItem(i).equals(tranzaction.getStatus())) {
-                    spnStatus.setSelection(i);
-                    break;
-                }
-            }
+    private void sendMoney(){
+        String authorization = preferences.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            goToLogin();
+            return;
         }
 
+        String receiver = etAccount.getText().toString().trim();
+        Double amount = Double.parseDouble(etAmount.getText().toString().trim());
+        TransferRequest request = new TransferRequest(receiver, amount);
+
+        apiService.transfer(authorization, request).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), R.string.money_send, Toast.LENGTH_LONG).show();
+                    finish();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Khong the chuyen tien. Kiem tra so du va so the nguoi nhan", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
+            }
+        });
+    }
+
+    private void goToLogin() {
+        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 
 }

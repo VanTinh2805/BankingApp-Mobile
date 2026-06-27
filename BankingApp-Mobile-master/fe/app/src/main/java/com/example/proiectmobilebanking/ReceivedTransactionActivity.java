@@ -3,14 +3,10 @@ package com.example.proiectmobilebanking;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.example.proiectmobilebanking.database.models.Tranzaction;
 import com.example.proiectmobilebanking.json.HttpManager;
 import com.example.proiectmobilebanking.json.HttpResponse;
 import com.example.proiectmobilebanking.json.JsonParser;
-import com.example.proiectmobilebanking.util.AdapterTranzactie;
 import com.example.proiectmobilebanking.util.AdapterTranzactieJson;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;

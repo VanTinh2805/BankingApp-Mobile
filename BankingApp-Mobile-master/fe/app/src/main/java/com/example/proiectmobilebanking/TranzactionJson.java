@@ -3,7 +3,6 @@ package com.example.proiectmobilebanking;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.example.proiectmobilebanking.database.models.Tranzaction;
 import com.example.proiectmobilebanking.json.InfoExtraTransaction;
 
 public class TranzactionJson implements Parcelable{

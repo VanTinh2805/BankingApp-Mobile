@@ -1,7 +1,6 @@
 package com.example.proiectmobilebanking.json;
 
 import com.example.proiectmobilebanking.TranzactionJson;
-import com.example.proiectmobilebanking.database.models.Tranzaction;
 
 import org.json.JSONArray;
 import org.json.JSONException;

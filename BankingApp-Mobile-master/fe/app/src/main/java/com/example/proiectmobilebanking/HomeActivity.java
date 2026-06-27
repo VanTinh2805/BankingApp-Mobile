@@ -3,7 +3,6 @@ package com.example.proiectmobilebanking;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.example.proiectmobilebanking.database.models.Tranzaction;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
@@ -15,22 +14,16 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
 import android.view.View;
-import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 private TabLayout tablayout;
 private ViewPager viewpager;
 private TabItem home,transactions;
 public PageAdapter pagerAdapter;
-List<Tranzaction> tranz=new ArrayList<>();
 public static final String ADD_TRANZACTION_KEY = "addPTranzaction";
     public static final String ADD_TRANZACTION_HISTORY = "addPTranzactionH";
     public static final int REQUEST_CODE_ADD_TRANSACTION = 200;
     Fragment currentFragment;
-    List<Tranzaction> tranzactions=new ArrayList<>();
     Intent intent;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,26 +33,6 @@ public static final String ADD_TRANZACTION_KEY = "addPTranzaction";
         setSupportActionBar(toolbar);
          intent=getIntent();
         initComponents();
-        Tranzaction t1=new Tranzaction("Bianca","BRD100",100,"send");
-        tranz.add((t1));
-        //startActivityForResult(intent,REQUEST_CODE_ADD_TRANSACTION);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_ADD_TRANSACTION
-                && resultCode == RESULT_OK
-                && data != null) {
-            Tranzaction tranzaction = data.getParcelableExtra(MoneyActivity
-                    .ADD_TRANZACTION_HISTORY);
-            if (tranzaction != null) {
-                Toast.makeText(getApplicationContext(),
-                        tranzaction.toString(),
-                        Toast.LENGTH_LONG).show();
-                tranz.add(tranzaction);
-            }
-        }
     }
 
     private void initComponents() {
