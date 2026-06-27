@@ -3,11 +3,9 @@ package matcha.banking.be.service;
 import lombok.RequiredArgsConstructor;
 import matcha.banking.be.dao.UserDao;
 import matcha.banking.be.dto.RegisterDto;
-import matcha.banking.be.entity.BillEntity;
 import matcha.banking.be.entity.UserEntity;
 import matcha.banking.be.util.JwtUtil;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

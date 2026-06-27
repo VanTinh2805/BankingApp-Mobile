@@ -60,4 +60,11 @@ public class TransitionService {
                 (t1, t2) -> t2.getCreated().compareTo(t1.getCreated())
         ).toList();
     }
+
+    public List<TransitionEntity> getReceivedTransition(String token) {
+        String myCardNumber = userService.getCardNumberfromToken(token);
+        return transitionDao.findByToUser(myCardNumber).stream().sorted(
+                (t1, t2) -> t2.getCreated().compareTo(t1.getCreated())
+        ).toList();
+    }
 }

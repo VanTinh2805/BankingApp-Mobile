@@ -7,9 +7,11 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.example.proiectmobilebanking.R;
+
 public class MainActivity extends AppCompatActivity {
-Button btnlogin;
-Button btnregister;
+    Button btnlogin;
+    Button btnregister;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,28 +20,23 @@ Button btnregister;
         initComponents();
     }
 
-    private void initComponents()
-    {
+    private void initComponents() {
         btnlogin = findViewById(R.id.login_main_button);
         btnlogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent =
-                        new Intent(getApplicationContext(),
-                                LoginActivity.class);
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 startActivity(intent);
-
             }
         });
 
         //initilizez butonul
-        btnregister=findViewById(R.id.register_button_main);
+        btnregister = findViewById(R.id.register_button_main);
         btnregister.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent2=new Intent(getApplicationContext(),RegisterActivity.class);
+                Intent intent2 = new Intent(MainActivity.this, RegisterActivity.class);
                 startActivity(intent2);
-
             }
         });
     }

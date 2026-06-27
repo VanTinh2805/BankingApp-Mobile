@@ -1,6 +1,5 @@
 package matcha.banking.be.dto;
 
-import jakarta.persistence.Column;
 import lombok.Data;
 
 import java.io.Serial;

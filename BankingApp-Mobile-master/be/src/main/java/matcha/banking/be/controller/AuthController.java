@@ -1,13 +1,11 @@
 package matcha.banking.be.controller;
 
 import lombok.RequiredArgsConstructor;
-import matcha.banking.be.dto.GetUserInfoDto;
 import matcha.banking.be.dto.LoginDto;
 import matcha.banking.be.dto.LoginReponseBodyDto;
 import matcha.banking.be.dto.RegisterDto;
 import matcha.banking.be.entity.EmailDetails;
 import matcha.banking.be.entity.UserEntity;
-import matcha.banking.be.mapper.UserMapper;
 import matcha.banking.be.service.AuthService;
 import matcha.banking.be.service.EmailService;
 import matcha.banking.be.service.UserService;
@@ -28,7 +26,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserMapper userMapper;
     private final UserService userService;
     private final EmailService emailService;
 

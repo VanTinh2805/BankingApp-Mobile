@@ -87,7 +87,7 @@ public class HistoryTransactionsActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == code) {
+        if (requestCode == code && resultCode == RESULT_OK) {
             loadTransitions();
         }
     }

@@ -1,148 +1,194 @@
 package com.example.proiectmobilebanking.Chart;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
+import com.example.proiectmobilebanking.LoginActivity;
+import com.example.proiectmobilebanking.R;
 import com.example.proiectmobilebanking.SharedPreferencesUser;
 import com.example.proiectmobilebanking.network.RetrofitClient;
 import com.example.proiectmobilebanking.network.api.ApiService;
 import com.example.proiectmobilebanking.network.model.TransitionResponse;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
-import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.Toast;
-
-import com.example.proiectmobilebanking.R;
-
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ChartActivity extends AppCompatActivity {
-private SharedPreferencesUser preferences;
-Integer amountSend=0;
-Integer amountAsk=0;
-LinearLayout layout;
-Integer values[]=new Integer[2];
-float valuesFloat[]=new float[2];
-private ApiService apiService;
+    private SharedPreferencesUser preferences;
+    private LinearLayout layout;
+    private ApiService apiService;
+    private double amountSent = 0;
+    private double amountReceived = 0;
+    private final DecimalFormat amountFormat = new DecimalFormat("#,##0.##", new DecimalFormatSymbols(Locale.US));
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chart);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        preferences=new SharedPreferencesUser(getApplicationContext());
+        preferences = new SharedPreferencesUser(getApplicationContext());
         apiService = RetrofitClient.getClient().create(ApiService.class);
+        layout = findViewById(R.id.chartLayout);
         loadChartData();
-
     }
 
     private void loadChartData() {
-        apiService.getCurrentTransitions(preferences.getAuthorizationHeader()).enqueue(new Callback<List<TransitionResponse>>() {
+        String authorization = preferences.getAuthorizationHeader();
+        if (authorization.isEmpty()) {
+            goToLogin();
+            return;
+        }
+
+        apiService.getCurrentTransitions(authorization).enqueue(new Callback<List<TransitionResponse>>() {
             @Override
             public void onResponse(Call<List<TransitionResponse>> call, Response<List<TransitionResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    for(TransitionResponse transition:response.body()){
-                        amountSend += transition.getAmount().intValue();
-                    }
-                    values[0]=amountSend;
-                    valuesFloat[0]=(float)amountSend;
-                    values[1]=amountAsk;
-                    valuesFloat[1]=(float)amountAsk;
-                    valuesFloat=calculate(valuesFloat);
-                    layout=findViewById(R.id.chartLayout);
-                    if(valuesFloat[0]!=0 || valuesFloat[1]!=0)
-                    {layout.addView(new Grafic(getApplicationContext(),valuesFloat));}
+                    amountSent = sumAmount(response.body());
+                    loadReceivedChartData(authorization);
+                } else if (response.code() == 401 || response.code() == 403) {
+                    preferences.clearSession();
+                    goToLogin();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Khong lay duoc thong ke giao dich gui", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<TransitionResponse>> call, Throwable t) {
                 Toast.makeText(getApplicationContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
             }
         });
     }
-    private float[] calculate(float[] vector){
-        float sum=0;
-        for(int i=0;i<vector.length;i++){
-            sum=sum+vector[i];
-        }
-        if (sum == 0) {
-            return vector;
-        }
-        for(int i=0;i<vector.length;i++){
-            vector[i]=360*(vector[i]/sum);
-        }
-        return vector;
+
+    private void loadReceivedChartData(String authorization) {
+        apiService.getReceivedTransitions(authorization).enqueue(new Callback<List<TransitionResponse>>() {
+            @Override
+            public void onResponse(Call<List<TransitionResponse>> call, Response<List<TransitionResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    amountReceived = sumAmount(response.body());
+                    renderChart();
+                } else if (response.code() == 401 || response.code() == 403) {
+                    preferences.clearSession();
+                    goToLogin();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Khong lay duoc thong ke giao dich nhan", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<TransitionResponse>> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), "Khong ket noi duoc toi Server", Toast.LENGTH_LONG).show();
+                t.printStackTrace();
+            }
+        });
     }
 
-    public class Grafic extends View{
-        private Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
-        private float[] degree;
-        private int[] colors={Color.MAGENTA,Color.YELLOW};
-        private Paint paint2=new Paint(Paint.ANTI_ALIAS_FLAG);
-      RectF rectf=new RectF();
-      RectF rectfRect=new RectF();
-      RectF recffRect2=new RectF();
-        int temp=0;
-        public Grafic(Context context,float[] values){
-            super(context);
-            degree=new float[values.length];
-            for(int i=0;i<values.length;i++){
-                degree[i]=valuesFloat[i];
+    private double sumAmount(List<TransitionResponse> transitions) {
+        double total = 0;
+        for (TransitionResponse transition : transitions) {
+            if (transition.getAmount() != null) {
+                total += transition.getAmount();
             }
+        }
+        return total;
+    }
+
+    private void renderChart() {
+        layout.removeAllViews();
+        if (amountSent <= 0 && amountReceived <= 0) {
+            Toast.makeText(getApplicationContext(), "Chua co du lieu giao dich", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        layout.addView(new Grafic(getApplicationContext(), calculateDegrees(amountSent, amountReceived), amountSent, amountReceived));
+    }
+
+    private float[] calculateDegrees(double sent, double received) {
+        double sum = sent + received;
+        if (sum <= 0) {
+            return new float[]{0, 0};
+        }
+        return new float[]{
+                (float) (360 * (sent / sum)),
+                (float) (360 * (received / sum))
+        };
+    }
+
+    private void goToLogin() {
+        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    public class Grafic extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float[] degree;
+        private final double sent;
+        private final double received;
+        private final int[] colors = {Color.MAGENTA, Color.YELLOW};
+        private final RectF chartBounds = new RectF();
+        private final RectF sentLegendBounds = new RectF();
+        private final RectF receivedLegendBounds = new RectF();
+
+        public Grafic(Context context, float[] values, double sent, double received) {
+            super(context);
+            this.degree = values;
+            this.sent = sent;
+            this.received = received;
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            int height=canvas.getHeight()/2;
-            int width=canvas.getWidth()/2;
-            int heightRect=300+(int)0.3*canvas.getHeight();
-            int widthRect=300+(int)0.3*canvas.getWidth();
-            int heightRect2=350+(int)0.3*canvas.getHeight();
-            int widthRect2=350+(int)0.3*canvas.getWidth();
-            rectfRect.set(widthRect-10,heightRect-10,widthRect+10,heightRect+10);
-            recffRect2.set(widthRect-10,heightRect-10,widthRect+10,heightRect+10);
-            rectf.set(width-100,height-100,width+100,height+100);
-            rectf.inset(-200,-200);
-            rectfRect.inset(-8,-8);
-            recffRect2.offsetTo(widthRect-10,heightRect+40);
-            recffRect2.inset(-8,-8);
+            int centerX = canvas.getWidth() / 2;
+            int centerY = canvas.getHeight() / 2;
+            int radius = Math.min(canvas.getWidth(), canvas.getHeight()) / 4;
 
-            for(int i=0;i<degree.length;i++){
-                if(i==0){
-                    paint.setColor(colors[i]);
-                    canvas.drawRect(rectfRect,paint);
-                    canvas.drawArc(rectf,0,degree[i],true,paint);
-                    paint.setColor(Color.BLACK);
-                    paint.setTextSize(40);
-                    canvas.drawText("Money sent",widthRect+40,widthRect+10,paint);
-                    paint2.setColor(colors[i+1]);
-                    canvas.drawRect(recffRect2,paint2);
-                    paint.setColor(Color.BLACK);
-                    paint.setTextSize(40);
-                    canvas.drawText("Money asked",widthRect+40,widthRect+60,paint);
-                }
-                else{
-                    temp+=(int)degree[i-1];
-                    paint.setColor(colors[i]);
-                    canvas.drawArc(rectf,temp,degree[i],true,paint);
+            chartBounds.set(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
 
-
-                }
+            float startAngle = 0;
+            for (int i = 0; i < degree.length; i++) {
+                paint.setColor(colors[i]);
+                canvas.drawArc(chartBounds, startAngle, degree[i], true, paint);
+                startAngle += degree[i];
             }
+
+            drawLegend(canvas, centerX - radius, centerY + radius + 60);
+        }
+
+        private void drawLegend(Canvas canvas, int left, int top) {
+            paint.setTextSize(36);
+
+            sentLegendBounds.set(left, top, left + 28, top + 28);
+            paint.setColor(colors[0]);
+            canvas.drawRect(sentLegendBounds, paint);
+            paint.setColor(Color.BLACK);
+            canvas.drawText("Money sent: " + amountFormat.format(sent), left + 45, top + 28, paint);
+
+            receivedLegendBounds.set(left, top + 55, left + 28, top + 83);
+            paint.setColor(colors[1]);
+            canvas.drawRect(receivedLegendBounds, paint);
+            paint.setColor(Color.BLACK);
+            canvas.drawText("Money received: " + amountFormat.format(received), left + 45, top + 83, paint);
         }
     }
-
 }

@@ -4,13 +4,10 @@ import lombok.RequiredArgsConstructor;
 import matcha.banking.be.dto.GetUserInfoDto;
 import matcha.banking.be.dto.RegisterDto;
 import matcha.banking.be.dto.TransitionDto;
-import matcha.banking.be.entity.EmailDetails;
 import matcha.banking.be.entity.UserEntity;
 import matcha.banking.be.mapper.UserMapper;
-import matcha.banking.be.service.EmailService;
 import matcha.banking.be.service.TransitionService;
 import matcha.banking.be.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -66,7 +63,7 @@ public class UserController {
         return ResponseEntity.ok(userMapper.entityToDto(userEntity));
     }
 
-    @PostMapping("/tranfer")
+    @PostMapping("/transfer")
     public ResponseEntity<Object> transfer(@RequestBody TransitionDto transitionDto, @RequestHeader("Authorization") String token) {
         Map<String, Object> responseBody = new HashMap<>();
         try {
@@ -88,7 +85,6 @@ public class UserController {
         Map<String, Object> responseBody = new HashMap<>();
         try {
             UserEntity userEntity = userService.getUserByEmail(userService.getEmailfromToken(token.substring(7)));
-            System.out.println(userEntity);
             GetUserInfoDto getUserInfoDto = userMapper.entityToDto(userEntity);
             return ResponseEntity.ok(getUserInfoDto);
         } catch (IllegalArgumentException ie) {
